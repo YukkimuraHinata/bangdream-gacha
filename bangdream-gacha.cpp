@@ -213,7 +213,7 @@ int main(int argc, char* argv[]) {
     int total_5star = 0, want_5star = 0;
     int total_4star = 0, want_4star = 0;
     int isNormal = 1, simulations = 1000000;
-    unsigned int user_threads = 8; //skip threads select
+    //unsigned int user_threads = 8; //skip threads select
     bool reverseFlag = 0;
 
      // 手动解析参数
@@ -242,7 +242,7 @@ int main(int argc, char* argv[]) {
             }
         }
 
-    std::cout << "欢迎使用抽卡期望模拟器！modified ver1.4" << std::endl;
+    std::cout << "欢迎使用抽卡期望模拟器！modified ver1.6" << std::endl;
     std::cout << "请输入当期5星卡的总数量: ";
     std::cin >> total_5star;
     if (total_5star < 0) {
@@ -273,7 +273,6 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    /* 线程固定为8后，这些内容即无用了
     // 在main函数中修改线程数检测部分
     unsigned int thread_count = std::thread::hardware_concurrency();
     if (thread_count == 0) thread_count = 4;
@@ -305,7 +304,7 @@ int main(int argc, char* argv[]) {
         std::cout << "线程数必须大于0，将使用1个线程\n";
         user_threads = 1;
     }
-    */
+
     calculate_statistics(total_5star, want_5star, total_4star, want_4star, isNormal, simulations, user_threads, reverseFlag);
     /*
     std::cout << "\n按回车键退出程序...";
