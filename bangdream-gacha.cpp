@@ -209,25 +209,34 @@ int calculate_statistics(int total_5star, int want_5star, int total_4star, int w
     return 0;
 }
 
+void printhelp() {
+    std::cout << "Options: \n"
+                << "  --reverse    -r    反推抽数排名\n"
+                << "  --number     -n    指定模拟次数，不应少于100万次\n"
+                << "  --version    -v    显示版本信息\n"
+                << "  --help       -h    显示帮助" <<std::endl;
+}
+
 int main(int argc, char* argv[]) {
     int total_5star = 0, want_5star = 0;
     int total_4star = 0, want_4star = 0;
     int isNormal = 1, simulations = 1000000;
-    //unsigned int user_threads = 8; //skip threads select
+    //unsigned int user_threads = 8;
     bool reverseFlag = 0;
 
      // 手动解析参数
      for (int i = 1; i < argc; ++i) {
          std::string arg = argv[i];
+         // std::cout << arg <<std::endl;
          if (arg == "--reverse" || arg == "-r") {
             reverseFlag = 1;
             std::cout << "当前处于反推抽数排名模式，因存在保底机制等原因，抽数使用并不严格遵循正态分布，结果仅供参考" <<std::endl;
             } else if (arg == "--version" || arg == "-v") {
-                std::cout <<"Version 1.6,Build 29 \n";
-                std::cout <<"Copyright (c) 2025, 山泥若叶睦，Modified by UDMH \n";
-                std::cout << "Original page at: https://gitee.com/handsome-druid/bangdream-gacha" << std::endl;
+                std::cout << "Version 1.7,Build 35 \n"
+                    << "Copyright (c) 2025, 山泥若叶睦，Modified by UDMH \n"
+                    << "Original page at: https://gitee.com/handsome-druid/bangdream-gacha" << std::endl;
                 return 0;
-            } else if (arg == "-n") {
+            } else if (arg == "--number" || arg == "-n") {
                 i++;
                 int tmpSimulations = std::atoi(argv[i]);
                 if(tmpSimulations > simulations){
@@ -236,13 +245,17 @@ int main(int argc, char* argv[]) {
                     else {
                         std::cout << "将使用默认值" << std::endl;
                     }
-                } else {
+            }
+            else if (arg == "--help" || arg == "-h") {
+                printhelp();
+                return 0;
+            } else {
                 std::cerr << "未知参数: " << arg << std::endl;
                 return -1;
             }
         }
 
-    std::cout << "欢迎使用抽卡期望模拟器！modified ver1.6" << std::endl;
+    std::cout << "欢迎使用抽卡期望模拟器！modified ver1.7" << std::endl;
     std::cout << "请输入当期5星卡的总数量: ";
     std::cin >> total_5star;
     if (total_5star < 0) {
@@ -313,10 +326,3 @@ int main(int argc, char* argv[]) {
     */
     return 0;
 }
-
-//1.1，去除线程选择
-//1.2，默认使用最低计算次数100w次，去除计算结束后等待任意键退出
-//1.3，加入计算结果使用星石数量计算
-//1.4，优化星石数量显示，以“万”为单位
-//1.5，去除计算次数输入，改用命令行参数指定,把CDF函数挪到main中
-//1.6。我们改变了CDF函数，又改了回去。为抽数输入增加异常处理
