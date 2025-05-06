@@ -288,8 +288,12 @@ int main(int argc, char* argv[]) {
 
     // 在main函数中修改线程数检测部分
     unsigned int thread_count = std::thread::hardware_concurrency();
-    if (thread_count == 0) thread_count = 4;
-
+    if (thread_count == 0) {
+        thread_count = 4;
+    }
+    unsigned int user_threads;
+    user_threads = std::max(1u,thread_count / 2);
+/*
     std::cout << "输入使用的线程数（-1查看更多说明，0使用保守建议值：）";
     unsigned int user_threads;
     std::cin >> user_threads;
@@ -317,7 +321,7 @@ int main(int argc, char* argv[]) {
         std::cout << "线程数必须大于0，将使用1个线程\n";
         user_threads = 1;
     }
-
+*/
     calculate_statistics(total_5star, want_5star, total_4star, want_4star, isNormal, simulations, user_threads, reverseFlag);
     /*
     std::cout << "\n按回车键退出程序...";
