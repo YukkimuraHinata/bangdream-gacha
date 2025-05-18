@@ -9,6 +9,8 @@
 #include <numeric>
 #include "color.h"
 
+#define Simulations 1000000 //定义模拟次数为一百万次
+
 //定义一个随机数生成器类，用于模拟抽卡
 class GachaRandom {
 private:
@@ -35,6 +37,12 @@ public:
     }
 };
 
+typedef struct arg_processing_return {
+    bool reverse_flag = 0;
+    bool processed_normally = 0;
+    int simulations = Simulations;
+} apr;
+
 int simulate_one_round(int total_5star, int want_5star, int total_4star, int want_4star, int normal, GachaRandom& random) {
     std::set<int> cards_5star;  // 已拥有的5星卡片集合
     std::set<int> cards_4star;  // 已拥有的4星卡片集合
@@ -43,7 +51,6 @@ int simulate_one_round(int total_5star, int want_5star, int total_4star, int wan
 
     while (true) {
         draws++;
-
         // 修改50保底逻辑
         if (draws % 50 == 0 && normal == 1) {
             if (want_5star > 0) {  // 只有当我们想要5星卡时才考虑
@@ -202,7 +209,6 @@ int calculate_statistics(int total_5star, int want_5star, int total_4star, int w
             return -1;
         }
         sigma = (percentile_90 - expected_draws)/1.28155;
-        //sigma = std::sqrt(0.005 * simulations); //λ极大时新的近似方式，然后发现自己理解错了
         z = (input - expected_draws)/sigma;
         cdfValue = 0.5 * (1 + std::erf(z / std::sqrt(2)));
         std::cout << "输入值 " << input << " 对应累积概率约为 " << ANSI_Cyan << cdfValue * 100.0 << "% 。" << ANSI_COLOR_RESET << std::endl;
@@ -210,51 +216,51 @@ int calculate_statistics(int total_5star, int want_5star, int total_4star, int w
     return 0;
 }
 
-void printhelp() {
-    std::cout << "Options: \n"
-                << "  --reverse    -r    反推抽数排名\n"
-                << "  --number     -n    指定模拟次数，不应少于100万次\n"
-                << "  --version    -v    显示版本信息\n"
-                << "  --help       -h    显示帮助" <<std::endl;
-}
-
-int main(int argc, char* argv[]) {
-    int total_5star = 0, want_5star = 0;
-    int total_4star = 0, want_4star = 0;
-    int isNormal = 1, simulations = 1000000;
-    bool reverseFlag = 0;
-
-     for (int i = 1; i < argc; ++i) {
-         std::string arg = argv[i];
-         // std::cout << arg <<std::endl;
-         if (arg == "--reverse" || arg == "-r") {
-            reverseFlag = 1;
+apr arg_processing(int argc, const char* argv[]) {
+    apr Result;
+    for (int i = 1; i < argc; ++i) {
+        std::string arg = argv[i];
+        if (arg == "--reverse" || arg == "-r") {
+            Result.reverse_flag = 1;
             std::cout << ANSI_Red <<" 当前处于反推抽数排名模式，结果仅供参考" << ANSI_COLOR_RESET <<std::endl;
             } else if (arg == "--version" || arg == "-v") {
                 std::cout << "Version 1.8,Build 39 \n"
                     << "Copyright (c) 2025, 山泥若叶睦，Modified by UDMH \n"
-                    << "Original page at: https://gitee.com/handsome-druid/bangdream-gacha"
+                    << "Original page at: https://gitee.com/handsome-druid/bangdream-gacha\n"
                     << "My GitHub page at: https://github.com/YukkimuraHinata/bangdream-gacha" << std::endl;
-                return 0;
             } else if (arg == "--number" || arg == "-n") {
                 i++;
                 int tmpSimulations = std::atoi(argv[i]);
-                if(tmpSimulations > simulations){
-                    simulations = tmpSimulations;
+                if(tmpSimulations > Simulations){
+                    Result.simulations = tmpSimulations;
                     }
                     else {
-                        std::cout << "将使用默认值" << std::endl;
+                        std::cout << "将使用默认值:" << Simulations << std::endl;
                     }
             }
             else if (arg == "--help" || arg == "-h") {
-                printhelp();
-                return 0;
+                std::cout << "Options: \n"
+                << "  --reverse    -r    反推抽数排名\n"
+                << "  --number     -n    指定模拟次数，不应少于100万次\n"
+                << "  --version    -v    显示版本信息\n"
+                << "  --help       -h    显示帮助" <<std::endl;
             } else {
                 std::cerr << "未知参数: " << ANSI_Red << arg << ANSI_COLOR_RESET << std::endl;
-                return -1;
+                Result.processed_normally = 1;
             }
         }
+    return Result;
+}
 
+int main(int argc, char* argv[]) {
+    apr res = arg_processing(argc, const_cast<const char**>(argv));
+    if(res.processed_normally == 1) {
+        return res.processed_normally;
+    }
+
+    bool reverseFlag = res.reverse_flag;
+    int isNormal = 1, simulations = res.simulations;
+    int total_5star = 0, want_5star = 0, total_4star = 0, want_4star = 0;
     std::cout << ANSI_Blue_BG << "BanG Dream! Gacha,a gacha simulator of Garupa" << ANSI_COLOR_RESET << std::endl;
     std::cout << "请输入当期5星卡的总数量: ";
     std::cin >> total_5star;
