@@ -40,6 +40,7 @@ public:
 typedef struct arg_processing_return {
     bool reverse_flag = 0;
     bool processed_normally = 0;
+    bool need_to_exit = 0;
     int simulations = Simulations;
 } apr;
 
@@ -189,8 +190,8 @@ int calculate_statistics(int total_5star, int want_5star, int total_4star, int w
     double neineigeneinei = draw_counts.back();
     
     std::cout << "----------------模拟结果----------------" << std::endl;
-    std::cout << "期望抽卡次数: " << ANSI_Cyan << expected_draws << std::endl;
-    std::cout << "中位数抽卡次数: " << percentile_50 << ANSI_COLOR_RESET << "，即" << percentile_50 /40  << "w星石" << std::endl;
+    std::cout << "期望抽卡次数: " << ANSI_Cyan << expected_draws << ANSI_COLOR_RESET << std::endl;
+    std::cout << "中位数抽卡次数: " << ANSI_Cyan << percentile_50 << ANSI_COLOR_RESET << "，即" << percentile_50 /40  << "w星石" << std::endl;
     std::cout << "90%玩家在以下抽数内集齐: " << ANSI_Cyan << percentile_90 << ANSI_COLOR_RESET << "，即" << percentile_90 /40 << "w星石" << std::endl;
     std::cout << "非酋至多抽卡次数: " << ANSI_Cyan << neineigeneinei << ANSI_COLOR_RESET << "，即" << neineigeneinei /40 << "w星石" << std::endl;
     // 结束计时并计算耗时
@@ -226,8 +227,9 @@ apr arg_processing(int argc, const char* argv[]) {
             } else if (arg == "--version" || arg == "-v") {
                 std::cout << "Version 1.8,Build 39 \n"
                     << "Copyright (c) 2025, 山泥若叶睦，Modified by UDMH \n"
-                    << "Original page at: https://gitee.com/handsome-druid/bangdream-gacha\n"
-                    << "My GitHub page at: https://github.com/YukkimuraHinata/bangdream-gacha" << std::endl;
+                    << "Original page at: https://gitee.com/handsome-druid/bangdream-gacha \n"
+                    << "My GitHub page at: https://github.com/YukkimuraHinata/bangdream-gacha \n" << std::endl;
+                Result.need_to_exit = 1;
             } else if (arg == "--number" || arg == "-n") {
                 i++;
                 int tmpSimulations = std::atoi(argv[i]);
@@ -243,10 +245,12 @@ apr arg_processing(int argc, const char* argv[]) {
                 << "  --reverse    -r    反推抽数排名\n"
                 << "  --number     -n    指定模拟次数，不应少于100万次\n"
                 << "  --version    -v    显示版本信息\n"
-                << "  --help       -h    显示帮助" <<std::endl;
+                << "  --help       -h    显示帮助\n" <<std::endl;
+                Result.need_to_exit = 1;
             } else {
                 std::cerr << "未知参数: " << ANSI_Red << arg << ANSI_COLOR_RESET << std::endl;
                 Result.processed_normally = 1;
+                Result.need_to_exit = 1;
             }
         }
     return Result;
@@ -254,7 +258,7 @@ apr arg_processing(int argc, const char* argv[]) {
 
 int main(int argc, char* argv[]) {
     apr res = arg_processing(argc, const_cast<const char**>(argv));
-    if(res.processed_normally == 1) {
+    if(res.need_to_exit == 1) {
         return res.processed_normally;
     }
 
