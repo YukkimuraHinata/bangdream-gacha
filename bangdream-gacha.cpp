@@ -187,13 +187,13 @@ int calculate_statistics(int total_5star, int want_5star, int total_4star, int w
     std::sort(draw_counts.begin(), draw_counts.end());
     double percentile_50 = draw_counts[simulations / 2];
     double percentile_90 = draw_counts[static_cast<int>(simulations * 0.9)];
-    double neineigeneinei = draw_counts.back();
+    double max_number = draw_counts.back();
     
     std::cout << "----------------模拟结果----------------" << std::endl;
     std::cout << "期望抽卡次数: " << ANSI_Cyan << expected_draws << ANSI_COLOR_RESET << std::endl;
     std::cout << "中位数抽卡次数: " << ANSI_Cyan << percentile_50 << ANSI_COLOR_RESET << "，即" << percentile_50 /40  << "w星石" << std::endl;
     std::cout << "90%玩家在以下抽数内集齐: " << ANSI_Cyan << percentile_90 << ANSI_COLOR_RESET << "，即" << percentile_90 /40 << "w星石" << std::endl;
-    std::cout << "非酋至多抽卡次数: " << ANSI_Cyan << neineigeneinei << ANSI_COLOR_RESET << "，即" << neineigeneinei /40 << "w星石" << std::endl;
+    std::cout << "非酋至多抽卡次数: " << ANSI_Cyan << max_number << ANSI_COLOR_RESET << "，即" << max_number /40 << "w星石" << std::endl;
     // 结束计时并计算耗时
     auto end_time = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
@@ -201,7 +201,7 @@ int calculate_statistics(int total_5star, int want_5star, int total_4star, int w
     
     std::cout << "模拟耗时: " << seconds << " 秒" << std::endl;
 
-    if(reverseFlag == 1) {
+    if(reverseFlag) {
         double input, sigma, z, cdfValue;
         std::cout << "请输入所使用的抽数：";
         std::cin >> input;
@@ -209,26 +209,33 @@ int calculate_statistics(int total_5star, int want_5star, int total_4star, int w
             std::cerr << "输入值过小！" << std::endl;
             return -1;
         }
-        sigma = (percentile_90 - expected_draws)/1.28155;
-        z = (input - expected_draws)/sigma;
-        cdfValue = 0.5 * (1 + std::erf(z / std::sqrt(2)));
-        std::cout << "输入值 " << input << " 对应累积概率约为 " << ANSI_Cyan << cdfValue * 100.0 << "% 。" << ANSI_COLOR_RESET << std::endl;
+        else if(input > max_number) {
+            std::cout << "你忘记换保底了！" << std::endl;
+            return -1;
+        } else {
+            sigma = (percentile_90 - expected_draws)/1.28155;
+            z = (input - expected_draws)/sigma;
+            cdfValue = 0.5 * (1 + std::erf(z / std::sqrt(2)));
+            std::cout << "输入值 " << input << " 对应累积概率约为 " << ANSI_Cyan << cdfValue * 100.0 << "% " << ANSI_COLOR_RESET << std::endl;
+        }
     }
     return 0;
 }
 
-apr arg_processing(int argc, const char* argv[]) {
+inline apr arg_processing(int argc, const char* argv[]) {
     apr Result;
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
         if (arg == "--reverse" || arg == "-r") {
             Result.reverse_flag = 1;
-            std::cout << ANSI_Red <<" 当前处于反推抽数排名模式，结果仅供参考" << ANSI_COLOR_RESET <<std::endl;
+            std::cout << ANSI_Red <<"当前处于反推抽数排名模式，结果仅供参考" << ANSI_COLOR_RESET << std::endl;
             } else if (arg == "--version" || arg == "-v") {
-                std::cout << "Version 1.8,Build 39 \n"
+                std::cout << "BanG Dream! Gacha,version 1.8,Build 46 \n"
                     << "Copyright (c) 2025, 山泥若叶睦，Modified by UDMH \n"
                     << "Original page at: https://gitee.com/handsome-druid/bangdream-gacha \n"
-                    << "My GitHub page at: https://github.com/YukkimuraHinata/bangdream-gacha \n" << std::endl;
+                    << "My GitHub page at: https://github.com/YukkimuraHinata/bangdream-gacha \n"
+                    << "编译时间: " << __DATE__  << " " << __TIME__ "\n"
+                    << "C++ Version: " << __cplusplus << std::endl;
                 Result.need_to_exit = 1;
             } else if (arg == "--number" || arg == "-n") {
                 i++;
@@ -262,8 +269,7 @@ int main(int argc, char* argv[]) {
         return res.processed_normally;
     }
 
-    bool reverseFlag = res.reverse_flag;
-    int isNormal = 1, simulations = res.simulations;
+    int isNormal = 1;
     int total_5star = 0, want_5star = 0, total_4star = 0, want_4star = 0;
     std::cout << ANSI_Blue_BG << "BanG Dream! Gacha,a gacha simulator of Garupa" << ANSI_COLOR_RESET << std::endl;
     std::cout << "请输入当期5星卡的总数量: ";
@@ -332,8 +338,8 @@ int main(int argc, char* argv[]) {
         user_threads = 1;
     }
 */
-    calculate_statistics(total_5star, want_5star, total_4star, want_4star, isNormal, simulations, user_threads, reverseFlag);
-    /*
+    calculate_statistics(total_5star, want_5star, total_4star, want_4star, isNormal, res.simulations, user_threads, res.reverse_flag);
+    /* 想要程序在计算完成后不退出，则取消注释下面的几行
     std::cout << "\n按回车键退出程序...";
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     std::cin.get();
