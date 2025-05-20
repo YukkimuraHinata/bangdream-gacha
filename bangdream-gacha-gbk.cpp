@@ -7,6 +7,9 @@
 #include <thread>
 #include <mutex>
 #include <numeric>
+#include "color.h"
+
+#define Simulations 1000000 //定义模拟次数为一百万次
 
 //定义一个随机数生成器类，用于模拟抽卡
 class GachaRandom {
@@ -34,6 +37,14 @@ public:
     }
 };
 
+//定义一个结构体，用于存放启动参数的处理结果
+typedef struct arg_processing_return {
+    bool reverse_flag = 0;
+    bool processed_normally = 0;
+    bool need_to_exit = 0;
+    int simulations = Simulations;
+} apr;
+
 int simulate_one_round(int total_5star, int want_5star, int total_4star, int want_4star, int normal, GachaRandom& random) {
     std::set<int> cards_5star;  // 已拥有的5星卡片集合
     std::set<int> cards_4star;  // 已拥有的4星卡片集合
@@ -42,7 +53,6 @@ int simulate_one_round(int total_5star, int want_5star, int total_4star, int wan
 
     while (true) {
         draws++;
-
         // 修改50保底逻辑
         if (draws % 50 == 0 && normal == 1) {
             if (want_5star > 0) {  // 只有当我们想要5星卡时才考虑
@@ -92,27 +102,6 @@ int simulate_one_round(int total_5star, int want_5star, int total_4star, int wan
         }
         next_draw:
 
-        // 自选逻辑
-        // if (draws % 300 == 200) {
-        //     if (cards_5star.size() < want_5star) {
-        //         for (int i = 1; i <= want_5star; i++) {
-        //             if (cards_5star.find(i) == cards_5star.end()) {
-        //                 cards_5star.insert(i);
-        //                 goto skip_4star_choice;
-        //             }
-        //         }
-        //     }
-        //     if (cards_4star.size() < want_4star) {
-        //         for (int i = 1; i <= want_4star; i++) {
-        //             if (cards_4star.find(i) == cards_4star.end()) {
-        //                 cards_4star.insert(i);
-        //                 break;
-        //             }
-        //         }
-        //     }
-        //     skip_4star_choice:;
-        // }
-        //新的自选逻辑，先把抽卡抽完，再进行自选，避免重复抽到
         choose_times_have = ( draws + 100 ) / 300;
         if(cards_5star.size() + cards_4star.size() + choose_times_have >= want_5star + want_4star) {
             break; 
@@ -178,13 +167,13 @@ int calculate_statistics(int total_5star, int want_5star, int total_4star, int w
     std::sort(draw_counts.begin(), draw_counts.end());
     double percentile_50 = draw_counts[simulations / 2];
     double percentile_90 = draw_counts[static_cast<int>(simulations * 0.9)];
-    double neineigeneinei = draw_counts.back();
+    double max_number = draw_counts.back();
     
     std::cout << "----------------模拟结果----------------" << std::endl;
-    std::cout << "期望抽卡次数: " << expected_draws << std::endl;
-    std::cout << "中位数抽卡次数: " << percentile_50 << "，即" << percentile_50 /40  << "w星石" << std::endl;
-    std::cout << "90%玩家在以下抽数内集齐: " << percentile_90 << "，即" << percentile_90 /40 << "w星石" << std::endl;
-    std::cout << "非酋至多抽卡次数: " << neineigeneinei << "，即" << neineigeneinei /40 << "w星石" << std::endl;
+    std::cout << "期望抽卡次数: " << ANSI_Cyan << expected_draws << ANSI_COLOR_RESET << std::endl;
+    std::cout << "中位数抽卡次数: " << ANSI_Cyan << percentile_50 << ANSI_COLOR_RESET << "，即" << percentile_50 /40  << "w星石" << std::endl;
+    std::cout << "90%玩家在以下抽数内集齐: " << ANSI_Cyan << percentile_90 << ANSI_COLOR_RESET << "，即" << percentile_90 /40 << "w星石" << std::endl;
+    std::cout << "非酋至多抽卡次数: " << ANSI_Cyan << max_number << ANSI_COLOR_RESET << "，即" << max_number /40 << "w星石" << std::endl;
     // 结束计时并计算耗时
     auto end_time = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
@@ -192,7 +181,7 @@ int calculate_statistics(int total_5star, int want_5star, int total_4star, int w
     
     std::cout << "模拟耗时: " << seconds << " 秒" << std::endl;
 
-    if(reverseFlag == 1) {
+    if(reverseFlag) {
         double input, sigma, z, cdfValue;
         std::cout << "请输入所使用的抽数：";
         std::cin >> input;
@@ -200,62 +189,69 @@ int calculate_statistics(int total_5star, int want_5star, int total_4star, int w
             std::cerr << "输入值过小！" << std::endl;
             return -1;
         }
-        sigma = (percentile_90 - expected_draws)/1.28155;
-        //sigma = std::sqrt(0.005 * simulations); //λ极大时新的近似方式，然后发现自己理解错了
-        z = (input - expected_draws)/sigma;
-        cdfValue = 0.5 * (1 + std::erf(z / std::sqrt(2)));
-        std::cout << "输入值 " << input << " 对应累积概率约为 " << cdfValue * 100.0 << "% 。" << std::endl;
+        else if(input > max_number) {
+            std::cout << "你忘记换保底了！" << std::endl;
+            return -1;
+        } else {
+            sigma = (percentile_90 - expected_draws)/1.28155;
+            z = (input - expected_draws)/sigma;
+            cdfValue = 0.5 * (1 + std::erf(z / std::sqrt(2)));
+            std::cout << "输入值 " << input << " 对应累积概率约为 " << ANSI_Cyan << cdfValue * 100.0 << "% " << ANSI_COLOR_RESET << std::endl;
+        }
     }
     return 0;
 }
 
-void printhelp() {
-    std::cout << "Options: \n"
+inline apr arg_processing(int argc, const char* argv[]) {
+    apr Result;
+    for (int i = 1; i < argc; ++i) {
+        std::string arg = argv[i];
+        if (arg == "--reverse" || arg == "-r") {
+            Result.reverse_flag = 1;
+            std::cout << ANSI_Red <<"当前处于反推抽数排名模式，结果仅供参考" << ANSI_COLOR_RESET << std::endl;
+            } else if (arg == "--version" || arg == "-v") {
+                std::cout << "BanG Dream! Gacha,version 1.8,Build 46 \n"
+                    << "Copyright (c) 2025, 山泥若叶睦，Modified by UDMH \n"
+                    << "Original page at: https://gitee.com/handsome-druid/bangdream-gacha \n"
+                    << "My GitHub page at: https://github.com/YukkimuraHinata/bangdream-gacha \n"
+                    << "编译时间: " << __DATE__  << " " << __TIME__ "\n"
+                    << "C++ Version: " << __cplusplus << std::endl;
+                Result.need_to_exit = 1;
+            } else if (arg == "--number" || arg == "-n") {
+                i++;
+                int tmpSimulations = std::atoi(argv[i]);
+                if(tmpSimulations > Simulations){
+                    Result.simulations = tmpSimulations;
+                    }
+                    else {
+                        std::cout << "将使用默认值:" << Simulations << std::endl;
+                    }
+            }
+            else if (arg == "--help" || arg == "-h") {
+                std::cout << "Options: \n"
                 << "  --reverse    -r    反推抽数排名\n"
                 << "  --number     -n    指定模拟次数，不应少于100万次\n"
                 << "  --version    -v    显示版本信息\n"
-                << "  --help       -h    显示帮助" <<std::endl;
+                << "  --help       -h    显示帮助\n" <<std::endl;
+                Result.need_to_exit = 1;
+            } else {
+                std::cerr << "未知参数: " << ANSI_Red << arg << ANSI_COLOR_RESET << std::endl;
+                Result.processed_normally = 1;
+                Result.need_to_exit = 1;
+            }
+        }
+    return Result;
 }
 
 int main(int argc, char* argv[]) {
-    int total_5star = 0, want_5star = 0;
-    int total_4star = 0, want_4star = 0;
-    int isNormal = 1, simulations = 1000000;
-    //unsigned int user_threads = 8; //skip threads select
-    bool reverseFlag = 0;
+    apr res = arg_processing(argc, const_cast<const char**>(argv));
+    if(res.need_to_exit == 1) {
+        return res.processed_normally;
+    }
 
-    // 手动解析参数
-    for (int i = 1; i < argc; ++i) {
-        std::string arg = argv[i];
-        // std::cout << arg <<std::endl;
-        if (arg == "--reverse" || arg == "-r") {
-           reverseFlag = 1;
-           std::cout << "当前处于反推抽数排名模式，因存在保底机制等原因，抽数使用并不严格遵循正态分布，结果仅供参考" <<std::endl;
-           } else if (arg == "--version" || arg == "-v") {
-               std::cout << "Version 1.7,Build 35 \n"
-                   << "Copyright (c) 2025, 山泥若叶睦，Modified by UDMH \n"
-                   << "Original page at: https://gitee.com/handsome-druid/bangdream-gacha" << std::endl;
-               return 0;
-           } else if (arg == "--number" || arg == "-n") {
-               i++;
-               int tmpSimulations = std::atoi(argv[i]);
-               if(tmpSimulations > simulations){
-                   simulations = tmpSimulations;
-                   }
-                   else {
-                       std::cout << "将使用默认值" << std::endl;
-                   }
-           }
-           else if (arg == "--help" || arg == "-h") {
-               printhelp();
-               return 0;
-           } else {
-               std::cerr << "未知参数: " << arg << std::endl;
-               return -1;
-           }
-       }
-
-    std::cout << "欢迎使用抽卡期望模拟器！modified ver1.7" << std::endl;
+    int isNormal = 1;
+    int total_5star = 0, want_5star = 0, total_4star = 0, want_4star = 0;
+    std::cout << ANSI_Blue_BG << "BanG Dream! Gacha,a gacha simulator of Garupa" << ANSI_COLOR_RESET << std::endl;
     std::cout << "请输入当期5星卡的总数量: ";
     std::cin >> total_5star;
     if (total_5star < 0) {
@@ -322,7 +318,7 @@ int main(int argc, char* argv[]) {
         user_threads = 1;
     }
 */
-    calculate_statistics(total_5star, want_5star, total_4star, want_4star, isNormal, simulations, user_threads, reverseFlag);
+    calculate_statistics(total_5star, want_5star, total_4star, want_4star, isNormal, res.simulations, user_threads, res.reverse_flag);
     std::cout << "\n按回车键退出程序...";
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     std::cin.get();
