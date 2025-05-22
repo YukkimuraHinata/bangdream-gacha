@@ -101,26 +101,6 @@ int simulate_one_round(int total_5star, int want_5star, int total_4star, int wan
         }
         next_draw:
 
-        // 自选逻辑
-        // if (draws % 300 == 200) {
-        //     if (cards_5star.size() < want_5star) {
-        //         for (int i = 1; i <= want_5star; i++) {
-        //             if (cards_5star.find(i) == cards_5star.end()) {
-        //                 cards_5star.insert(i);
-        //                 goto skip_4star_choice;
-        //             }
-        //         }
-        //     }
-        //     if (cards_4star.size() < want_4star) {
-        //         for (int i = 1; i <= want_4star; i++) {
-        //             if (cards_4star.find(i) == cards_4star.end()) {
-        //                 cards_4star.insert(i);
-        //                 break;
-        //             }
-        //         }
-        //     }
-        //     skip_4star_choice:;
-        // }
         //新的自选逻辑，先把抽卡抽完，再进行自选，避免重复抽到
         choose_times_have = ( draws + 100 ) / 300;
         if(cards_5star.size() + cards_4star.size() + choose_times_have >= want_5star + want_4star) {
@@ -230,12 +210,12 @@ inline apr arg_processing(int argc, const char* argv[]) {
             Result.reverse_flag = 1;
             std::cout << ANSI_Red <<"当前处于反推抽数排名模式，结果仅供参考" << ANSI_COLOR_RESET << std::endl;
             } else if (arg == "--version" || arg == "-v") {
-                std::cout << "BanG Dream! Gacha,version 1.8,Build 46 \n"
+                std::cout << "\n BanG Dream! Gacha,version 1.8,Build 46 \n"
                     << "Copyright (c) 2025, 山泥若叶睦，Modified by UDMH \n"
                     << "Original page at: https://gitee.com/handsome-druid/bangdream-gacha \n"
                     << "My GitHub page at: https://github.com/YukkimuraHinata/bangdream-gacha \n"
-                    << "编译时间: " << __DATE__  << " " << __TIME__ "\n"
-                    << "C++ Version: " << __cplusplus << std::endl;
+                    << "编译时间: " << __DATE__  << " " << __TIME__ << "\n"
+                    << "C++ Version: " << __cplusplus << "\n" << std::endl;
                 Result.need_to_exit = 1;
             } else if (arg == "--number" || arg == "-n") {
                 i++;
@@ -338,7 +318,8 @@ int main(int argc, char* argv[]) {
         user_threads = 1;
     }
 */
-    calculate_statistics(total_5star, want_5star, total_4star, want_4star, isNormal, res.simulations, user_threads, res.reverse_flag);
+    calculate_statistics(total_5star, want_5star, total_4star, want_4star, isNormal, 
+                        res.simulations, user_threads, res.reverse_flag);
     /* 想要程序在计算完成后不退出，则取消注释下面的几行
     std::cout << "\n按回车键退出程序...";
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
