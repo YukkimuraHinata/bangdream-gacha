@@ -210,12 +210,12 @@ inline apr arg_processing(int argc, const char* argv[]) {
             Result.reverse_flag = 1;
             std::cout << ANSI_Red <<"当前处于反推抽数排名模式，结果仅供参考" << ANSI_COLOR_RESET << std::endl;
             } else if (arg == "--version" || arg == "-v") {
-                std::cout << "\n BanG Dream! Gacha,version 1.8,Build 46 \n"
+                std::cout << "BanG Dream! Gacha,version 1.8,Build 46 \n"
                     << "Copyright (c) 2025, 山泥若叶睦，Modified by UDMH \n"
                     << "Original page at: https://gitee.com/handsome-druid/bangdream-gacha \n"
                     << "My GitHub page at: https://github.com/YukkimuraHinata/bangdream-gacha \n"
                     << "编译时间: " << __DATE__  << " " << __TIME__ << "\n"
-                    << "C++ Version: " << __cplusplus << "\n" << std::endl;
+                    << "C++ Version: " << __cplusplus << std::endl;
                 Result.need_to_exit = 1;
             } else if (arg == "--number" || arg == "-n") {
                 i++;
