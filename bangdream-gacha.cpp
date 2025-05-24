@@ -38,10 +38,12 @@ public:
 };
 
 typedef struct arg_processing_return {
-    bool reverse_flag = 0;
-    bool processed_normally = 0;
-    bool need_to_exit = 0;
+    bool reverse_flag = false;
+    bool unknow_arg = false;
+    bool need_to_exit = false;
+    bool use_user_threads = false;
     int simulations = Simulations;
+    unsigned int threads = 1;
 } apr;
 
 int simulate_one_round(int total_5star, int want_5star, int total_4star, int want_4star, int normal, GachaRandom& random) {
@@ -195,7 +197,7 @@ int calculate_statistics(int total_5star, int want_5star, int total_4star, int w
         } else {
             sigma = (percentile_90 - expected_draws)/1.28155;
             z = (input - expected_draws)/sigma;
-            cdfValue = 0.5 * (1 + std::erf(z / std::sqrt(2)));
+            cdfValue = 0.5 * (1 + std::erf(z / 1.41421)); //sqrt(2)
             std::cout << "输入值 " << input << " 对应累积概率约为 " << ANSI_Cyan << cdfValue * 100.0 << "% " << ANSI_COLOR_RESET << std::endl;
         }
     }
@@ -204,19 +206,39 @@ int calculate_statistics(int total_5star, int want_5star, int total_4star, int w
 
 inline apr arg_processing(int argc, const char* argv[]) {
     apr Result;
+    unsigned int thread_count = std::thread::hardware_concurrency();
+    if (thread_count == 0) {
+        thread_count = 4;
+    }
+    Result.threads = std::max(1u,thread_count / 2u);
     for (int i = 1; i < argc; ++i) {
         std::string arg = argv[i];
         if (arg == "--reverse" || arg == "-r") {
-            Result.reverse_flag = 1;
+            Result.reverse_flag = true;
             std::cout << ANSI_Red <<"当前处于反推抽数排名模式，结果仅供参考" << ANSI_COLOR_RESET << std::endl;
+            } else if (arg == "--thread" || arg == "-t") {
+                i++;
+                int user_threads;
+                user_threads = std::atoi(argv[i]);
+                if(user_threads < 1) {
+                    std::cout << ANSI_Red_BG << "线程数必须大于0，将使用1个线程" << ANSI_COLOR_RESET <<std::endl;
+                    Result.threads = 1u;
+                } else if (user_threads > thread_count) {
+                std::cout << ANSI_Red_BG << "警告：指定的线程数超过CPU线程，将使用" << thread_count << "线程" << ANSI_COLOR_RESET <<std::endl;
+                Result.threads = thread_count;
+                } else {
+                Result.threads = (unsigned int)user_threads;
+                }
+                Result.use_user_threads = true;
             } else if (arg == "--version" || arg == "-v") {
-                std::cout << "BanG Dream! Gacha,version 1.8,Build 46 \n"
+                std::cout << "BanG Dream! Gacha,version 1.9,Build 50 \n"
                     << "Copyright (c) 2025, 山泥若叶睦，Modified by UDMH \n"
                     << "Original page at: https://gitee.com/handsome-druid/bangdream-gacha \n"
                     << "My GitHub page at: https://github.com/YukkimuraHinata/bangdream-gacha \n"
+                    << "编译器：g++ 15.1.0 (x86_64-win32-seh-rev0, Built by MinGW-Builds project) \n"
                     << "编译时间: " << __DATE__  << " " << __TIME__ << "\n"
-                    << "C++ Version: " << __cplusplus << std::endl;
-                Result.need_to_exit = 1;
+                    << "C++ Version: " << __cplusplus << "\n" << std::endl;
+                Result.need_to_exit = true;
             } else if (arg == "--number" || arg == "-n") {
                 i++;
                 int tmpSimulations = std::atoi(argv[i]);
@@ -226,18 +248,20 @@ inline apr arg_processing(int argc, const char* argv[]) {
                     else {
                         std::cout << "将使用默认值:" << Simulations << std::endl;
                     }
-            }
-            else if (arg == "--help" || arg == "-h") {
+            } else if (arg == "--help" || arg == "-h") {
                 std::cout << "Options: \n"
                 << "  --reverse    -r    反推抽数排名\n"
                 << "  --number     -n    指定模拟次数，不应少于100万次\n"
+                << "  --thread     -t    指定使用的线程数，不多于CPU的线程\n"
                 << "  --version    -v    显示版本信息\n"
                 << "  --help       -h    显示帮助\n" <<std::endl;
-                Result.need_to_exit = 1;
+                Result.need_to_exit = true;
             } else {
                 std::cerr << "未知参数: " << ANSI_Red << arg << ANSI_COLOR_RESET << std::endl;
-                Result.processed_normally = 1;
-                Result.need_to_exit = 1;
+                std::cout << "输入“bangdream-gacha -h”查看帮助" << std::endl;
+                Result.unknow_arg = true;
+                Result.need_to_exit = true;
+                break;
             }
         }
     return Result;
@@ -245,8 +269,8 @@ inline apr arg_processing(int argc, const char* argv[]) {
 
 int main(int argc, char* argv[]) {
     apr res = arg_processing(argc, const_cast<const char**>(argv));
-    if(res.need_to_exit == 1) {
-        return res.processed_normally;
+    if(res.need_to_exit) {
+        return res.unknow_arg;
     }
 
     int isNormal = 1;
@@ -282,13 +306,6 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    // 在main函数中修改线程数检测部分
-    unsigned int thread_count = std::thread::hardware_concurrency();
-    if (thread_count == 0) {
-        thread_count = 4;
-    }
-    unsigned int user_threads;
-    user_threads = std::max(1u,thread_count / 2);
 /*
     std::cout << "输入使用的线程数（-1查看更多说明，0使用保守建议值：）";
     unsigned int user_threads;
@@ -319,7 +336,7 @@ int main(int argc, char* argv[]) {
     }
 */
     calculate_statistics(total_5star, want_5star, total_4star, want_4star, isNormal, 
-                        res.simulations, user_threads, res.reverse_flag);
+                        res.simulations, res.threads, res.reverse_flag);
     /* 想要程序在计算完成后不退出，则取消注释下面的几行
     std::cout << "\n按回车键退出程序...";
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
