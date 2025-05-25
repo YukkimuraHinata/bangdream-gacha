@@ -41,7 +41,6 @@ typedef struct arg_processing_return {
     bool reverse_flag = false;
     bool unknow_arg = false;
     bool need_to_exit = false;
-    bool use_user_threads = false;
     int simulations = Simulations;
     unsigned int threads = 1;
 } apr;
@@ -190,8 +189,7 @@ int calculate_statistics(int total_5star, int want_5star, int total_4star, int w
         if(input < 10) {
             std::cerr << "输入值过小！" << std::endl;
             return -1;
-        }
-        else if(input > max_number) {
+        } else if(input > max_number) {
             std::cout << "你忘记换保底了！" << std::endl;
             return -1;
         } else {
@@ -229,13 +227,11 @@ inline apr arg_processing(int argc, const char* argv[]) {
                 } else {
                 Result.threads = (unsigned int)user_threads;
                 }
-                Result.use_user_threads = true;
             } else if (arg == "--version" || arg == "-v") {
                 std::cout << "BanG Dream! Gacha,version 1.9,Build 50 \n"
                     << "Copyright (c) 2025, 山泥若叶睦，Modified by UDMH \n"
                     << "Original page at: https://gitee.com/handsome-druid/bangdream-gacha \n"
                     << "My GitHub page at: https://github.com/YukkimuraHinata/bangdream-gacha \n"
-                    << "编译器：g++ 15.1.0 (x86_64-win32-seh-rev0, Built by MinGW-Builds project) \n"
                     << "编译时间: " << __DATE__  << " " << __TIME__ << "\n"
                     << "C++ Version: " << __cplusplus << "\n" << std::endl;
                 Result.need_to_exit = true;
@@ -244,8 +240,7 @@ inline apr arg_processing(int argc, const char* argv[]) {
                 int tmpSimulations = std::atoi(argv[i]);
                 if(tmpSimulations > Simulations){
                     Result.simulations = tmpSimulations;
-                    }
-                    else {
+                    } else {
                         std::cout << "将使用默认值:" << Simulations << std::endl;
                     }
             } else if (arg == "--help" || arg == "-h") {
@@ -272,7 +267,7 @@ int main(int argc, char* argv[]) {
     if(res.need_to_exit) {
         return res.unknow_arg;
     }
-
+    std::ios::sync_with_stdio(false);
     int isNormal = 1;
     int total_5star = 0, want_5star = 0, total_4star = 0, want_4star = 0;
     std::cout << ANSI_Blue_BG << "BanG Dream! Gacha,a gacha simulator of Garupa" << ANSI_COLOR_RESET << std::endl;
@@ -335,12 +330,12 @@ int main(int argc, char* argv[]) {
         user_threads = 1;
     }
 */
-    calculate_statistics(total_5star, want_5star, total_4star, want_4star, isNormal, 
+    int return_value = calculate_statistics(total_5star, want_5star, total_4star, want_4star, isNormal, 
                         res.simulations, res.threads, res.reverse_flag);
     /* 想要程序在计算完成后不退出，则取消注释下面的几行
     std::cout << "\n按回车键退出程序...";
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     std::cin.get();
     */
-    return 0;
+    return return_value;
 }
