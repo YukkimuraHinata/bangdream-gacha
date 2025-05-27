@@ -69,7 +69,7 @@ int simulate_one_round(int total_5star, int want_5star, int total_4star, int wan
             // 先判断5星
             if (want_5star > 0) {  // 只有当我们想要5星卡时才判定
                 for (int i = 1; i <= want_5star; i++) {
-                    if (rand < 0.005 * total_5star * (i / (double)total_5star)) {
+                    if (rand < 0.005 * i) {
                         cards_5star.insert(i);
                         goto next_draw;
                     }
@@ -81,7 +81,7 @@ int simulate_one_round(int total_5star, int want_5star, int total_4star, int wan
             else {
                 rand = random.get_random();
                 for (int i = 1; i <= want_4star; i++) {
-                    if (rand < 0.0075 * total_4star * (i / (double)total_4star)) {
+                    if(rand < 0.0075 * i) {
                         cards_4star.insert(i);
                         break;
                     }
@@ -93,7 +93,7 @@ int simulate_one_round(int total_5star, int want_5star, int total_4star, int wan
             if (total_4star > 0 && want_4star > 0) {
                 rand = random.get_random();
                 for (int i = 1; i <= want_4star; i++) {
-                    if (rand < 0.0075 * total_4star * (i / (double)total_4star)) {
+                    if(rand < 0.0075 * i) {
                         cards_4star.insert(i);
                         break;
                     }
@@ -228,7 +228,7 @@ inline apr arg_processing(int argc, const char* argv[]) {
                 Result.threads = (unsigned int)user_threads;
                 }
             } else if (arg == "--version" || arg == "-v") {
-                std::cout << "BanG Dream! Gacha,version 1.9,Build 50 \n"
+                std::cout << "BanG Dream! Gacha,version 1.9.1,Build 54 \n"
                     << "Copyright (c) 2025, 山泥若叶睦，Modified by UDMH \n"
                     << "Original page at: https://gitee.com/handsome-druid/bangdream-gacha \n"
                     << "My GitHub page at: https://github.com/YukkimuraHinata/bangdream-gacha \n"
@@ -263,11 +263,11 @@ inline apr arg_processing(int argc, const char* argv[]) {
 }
 
 int main(int argc, char* argv[]) {
+    std::ios::sync_with_stdio(false);
     apr res = arg_processing(argc, const_cast<const char**>(argv));
     if(res.need_to_exit) {
         return res.unknow_arg;
     }
-    std::ios::sync_with_stdio(false);
     int isNormal = 1;
     int total_5star = 0, want_5star = 0, total_4star = 0, want_4star = 0;
     std::cout << ANSI_Blue_BG << "BanG Dream! Gacha,a gacha simulator of Garupa" << ANSI_COLOR_RESET << std::endl;
@@ -301,39 +301,12 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-/*
-    std::cout << "输入使用的线程数（-1查看更多说明，0使用保守建议值：）";
-    unsigned int user_threads;
-    std::cin >> user_threads;
-    if (user_threads == -1) {
-        std::cout << "----------------------------------------" << std::endl;
-        std::cout << "检测到系统支持的并发线程数：" << thread_count << std::endl;
-        std::cout << "注意：如果你使用的是Intel大小核处理器（12代或更新）：" << std::endl;
-        std::cout << "1. 建议仅使用P核心数量的线程" << std::endl;
-        std::cout << "2. 可以通过任务管理器->性能->CPU->处理器详细信息查看P核心数量" << std::endl;
-        std::cout << "请输入想要使用的线程数（1-" << thread_count << "）\n";
-        std::cout << "建议值：" << std::max(1u, thread_count / 4) << "-" << std::max(1u, thread_count / 2) 
-                 << " （根据CPU架构选择合适的值）\n";
-        std::cout << "输入0则使用保守建议值（"<< std::max(1u, thread_count / 4 )<< "）：";
-        std::cin >> user_threads;
-    }
-
-    if (user_threads == 0) {
-        // 使用更保守的默认值，避免在大小核架构上使用过多线程
-        user_threads = std::max(1u, thread_count / 4);
-        std::cout << "使用保守建议值：" << user_threads << " 线程\n";
-    } else if (user_threads > thread_count) {
-        std::cout << "警告：指定的线程数超过系统支持的最大值，将使用" << thread_count << "线程\n";
-        user_threads = thread_count;
-    } else if (user_threads < 1) {
-        std::cout << "线程数必须大于0，将使用1个线程\n";
-        user_threads = 1;
-    }
-*/
     int return_value = calculate_statistics(total_5star, want_5star, total_4star, want_4star, isNormal, 
                         res.simulations, res.threads, res.reverse_flag);
+
     std::cout << "\n按回车键退出程序...";
     std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     std::cin.get();
+
     return return_value;
 }

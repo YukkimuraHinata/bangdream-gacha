@@ -69,7 +69,7 @@ int simulate_one_round(int total_5star, int want_5star, int total_4star, int wan
             // 先判断5星
             if (want_5star > 0) {  // 只有当我们想要5星卡时才判定
                 for (int i = 1; i <= want_5star; i++) {
-                    if (rand < 0.005 * total_5star * (i / (double)total_5star)) {
+                    if (rand < 0.005 * i) {
                         cards_5star.insert(i);
                         goto next_draw;
                     }
@@ -81,7 +81,7 @@ int simulate_one_round(int total_5star, int want_5star, int total_4star, int wan
             else {
                 rand = random.get_random();
                 for (int i = 1; i <= want_4star; i++) {
-                    if (rand < 0.0075 * total_4star * (i / (double)total_4star)) {
+                    if(rand < 0.0075 * i) {
                         cards_4star.insert(i);
                         break;
                     }
@@ -93,7 +93,7 @@ int simulate_one_round(int total_5star, int want_5star, int total_4star, int wan
             if (total_4star > 0 && want_4star > 0) {
                 rand = random.get_random();
                 for (int i = 1; i <= want_4star; i++) {
-                    if (rand < 0.0075 * total_4star * (i / (double)total_4star)) {
+                    if(rand < 0.0075 * i) {
                         cards_4star.insert(i);
                         break;
                     }
@@ -228,7 +228,7 @@ inline apr arg_processing(int argc, const char* argv[]) {
                 Result.threads = (unsigned int)user_threads;
                 }
             } else if (arg == "--version" || arg == "-v") {
-                std::cout << "BanG Dream! Gacha,version 1.9,Build 50 \n"
+                std::cout << "BanG Dream! Gacha,version 1.9.1,Build 54 \n"
                     << "Copyright (c) 2025, 山泥若叶睦，Modified by UDMH \n"
                     << "Original page at: https://gitee.com/handsome-druid/bangdream-gacha \n"
                     << "My GitHub page at: https://github.com/YukkimuraHinata/bangdream-gacha \n"
@@ -263,11 +263,11 @@ inline apr arg_processing(int argc, const char* argv[]) {
 }
 
 int main(int argc, char* argv[]) {
+    std::ios::sync_with_stdio(false);
     apr res = arg_processing(argc, const_cast<const char**>(argv));
     if(res.need_to_exit) {
         return res.unknow_arg;
     }
-    std::ios::sync_with_stdio(false);
     int isNormal = 1;
     int total_5star = 0, want_5star = 0, total_4star = 0, want_4star = 0;
     std::cout << ANSI_Blue_BG << "BanG Dream! Gacha,a gacha simulator of Garupa" << ANSI_COLOR_RESET << std::endl;
