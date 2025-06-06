@@ -9,7 +9,8 @@
 #include <numeric>
 #include "color.h"
 
-#define Simulations 1000000 //定义模拟次数为一百万次
+#define Simulations 1000000 //默认模拟次数
+#define minSimulations 10000 //最低模拟次数
 
 //定义一个随机数生成器类，用于模拟抽卡
 class GachaRandom {
@@ -37,13 +38,14 @@ public:
     }
 };
 
-typedef struct arg_processing_return {
+class ArgProcessing {
+public:
     bool reverse_flag = false;
     bool unknow_arg = false;
     bool need_to_exit = false;
     int simulations = Simulations;
     unsigned int threads = 1;
-} apr;
+};
 
 int simulate_one_round(int total_5star, int want_5star, int total_4star, int want_4star, int normal, GachaRandom& random) {
     std::set<int> cards_5star;  // 已拥有的5星卡片集合
@@ -124,7 +126,6 @@ int calculate_statistics(int total_5star, int want_5star, int total_4star, int w
     std::cout << "50小保底: " << (normal == 1 ? "是" : "否") << std::endl;
     std::cout << "模拟次数: " << simulations << std::endl;
     std::cout << "使用线程数: " << thread_count << std::endl;
-    std::cout << "计算中..." << std::endl;
 
     std::vector<int> draw_counts;
     draw_counts.reserve(simulations);
@@ -175,6 +176,7 @@ int calculate_statistics(int total_5star, int want_5star, int total_4star, int w
     std::cout << "中位数抽卡次数: " << ANSI_Cyan << percentile_50 << ANSI_COLOR_RESET << "，即" << percentile_50 /40  << "w星石" << std::endl;
     std::cout << "90%玩家在以下抽数内集齐: " << ANSI_Cyan << percentile_90 << ANSI_COLOR_RESET << "，即" << percentile_90 /40 << "w星石" << std::endl;
     std::cout << "非酋至多抽卡次数: " << ANSI_Cyan << max_number << ANSI_COLOR_RESET << "，即" << max_number /40 << "w星石" << std::endl;
+    std::cout << "理论最多抽卡次数：" << ANSI_Cyan <<(want_4star + want_5star) * 300 - 100 << ANSI_COLOR_RESET << std::endl;
     // 结束计时并计算耗时
     auto end_time = std::chrono::high_resolution_clock::now();
     auto duration = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - start_time);
@@ -190,8 +192,8 @@ int calculate_statistics(int total_5star, int want_5star, int total_4star, int w
             std::cerr << "输入值过小！" << std::endl;
             return -1;
         } else if(input > max_number) {
-            std::cout << "你忘记换保底了！" << std::endl;
-            return -1;
+            std::cout << "超级非酋:( " << std::endl;
+            return 0;
         } else {
             sigma = (percentile_90 - expected_draws)/1.28155;
             z = (input - expected_draws)/sigma;
@@ -202,8 +204,8 @@ int calculate_statistics(int total_5star, int want_5star, int total_4star, int w
     return 0;
 }
 
-inline apr arg_processing(int argc, const char* argv[]) {
-    apr Result;
+inline ArgProcessing arg_processing(int argc, const char* argv[]) {
+    ArgProcessing Result;
     unsigned int thread_count = std::thread::hardware_concurrency();
     if (thread_count == 0) {
         thread_count = 4;
@@ -213,14 +215,13 @@ inline apr arg_processing(int argc, const char* argv[]) {
         std::string arg = argv[i];
         if (arg == "--reverse" || arg == "-r") {
             Result.reverse_flag = true;
-            std::cout << ANSI_Red <<"当前处于反推抽数排名模式，结果仅供参考" << ANSI_COLOR_RESET << std::endl;
+            std::cout << ANSI_Yellow_BG <<"当前处于反推抽数排名模式，结果仅供参考" << ANSI_COLOR_RESET << std::endl;
             } else if (arg == "--thread" || arg == "-t") {
                 i++;
                 int user_threads;
                 user_threads = std::atoi(argv[i]);
                 if(user_threads < 1) {
-                    std::cout << ANSI_Red_BG << "线程数必须大于0，将使用1个线程" << ANSI_COLOR_RESET <<std::endl;
-                    Result.threads = 1u;
+                    std::cout << ANSI_Red_BG << "线程数必须大于0，将使用默认值" << ANSI_COLOR_RESET <<std::endl;
                 } else if (user_threads > thread_count) {
                 std::cout << ANSI_Red_BG << "警告：指定的线程数超过CPU线程，将使用" << thread_count << "线程" << ANSI_COLOR_RESET <<std::endl;
                 Result.threads = thread_count;
@@ -238,10 +239,11 @@ inline apr arg_processing(int argc, const char* argv[]) {
             } else if (arg == "--number" || arg == "-n") {
                 i++;
                 int tmpSimulations = std::atoi(argv[i]);
-                if(tmpSimulations > Simulations){
+                if(tmpSimulations > minSimulations){
                     Result.simulations = tmpSimulations;
                     } else {
-                        std::cout << "将使用默认值:" << Simulations << std::endl;
+                        Result.simulations = minSimulations;
+                        std::cout << ANSI_Yellow_BG << "为保证精度，将使用最低允许值:" << minSimulations << ANSI_COLOR_RESET << std::endl;
                     }
             } else if (arg == "--help" || arg == "-h") {
                 std::cout << "Options: \n"
@@ -264,7 +266,7 @@ inline apr arg_processing(int argc, const char* argv[]) {
 
 int main(int argc, char* argv[]) {
     std::ios::sync_with_stdio(false);
-    apr res = arg_processing(argc, const_cast<const char**>(argv));
+    ArgProcessing res = arg_processing(argc, const_cast<const char**>(argv));
     if(res.need_to_exit) {
         return res.unknow_arg;
     }
@@ -301,35 +303,6 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-/*
-    std::cout << "输入使用的线程数（-1查看更多说明，0使用保守建议值：）";
-    unsigned int user_threads;
-    std::cin >> user_threads;
-    if (user_threads == -1) {
-        std::cout << "----------------------------------------" << std::endl;
-        std::cout << "检测到系统支持的并发线程数：" << thread_count << std::endl;
-        std::cout << "注意：如果你使用的是Intel大小核处理器（12代或更新）：" << std::endl;
-        std::cout << "1. 建议仅使用P核心数量的线程" << std::endl;
-        std::cout << "2. 可以通过任务管理器->性能->CPU->处理器详细信息查看P核心数量" << std::endl;
-        std::cout << "请输入想要使用的线程数（1-" << thread_count << "）\n";
-        std::cout << "建议值：" << std::max(1u, thread_count / 4) << "-" << std::max(1u, thread_count / 2) 
-                 << " （根据CPU架构选择合适的值）\n";
-        std::cout << "输入0则使用保守建议值（"<< std::max(1u, thread_count / 4 )<< "）：";
-        std::cin >> user_threads;
-    }
-
-    if (user_threads == 0) {
-        // 使用更保守的默认值，避免在大小核架构上使用过多线程
-        user_threads = std::max(1u, thread_count / 4);
-        std::cout << "使用保守建议值：" << user_threads << " 线程\n";
-    } else if (user_threads > thread_count) {
-        std::cout << "警告：指定的线程数超过系统支持的最大值，将使用" << thread_count << "线程\n";
-        user_threads = thread_count;
-    } else if (user_threads < 1) {
-        std::cout << "线程数必须大于0，将使用1个线程\n";
-        user_threads = 1;
-    }
-*/
     int return_value = calculate_statistics(total_5star, want_5star, total_4star, want_4star, isNormal, 
                         res.simulations, res.threads, res.reverse_flag);
     /* 想要程序在计算完成后不退出，则取消注释下面的几行
