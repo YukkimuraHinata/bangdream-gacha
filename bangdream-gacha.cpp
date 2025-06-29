@@ -16,14 +16,14 @@
 class GachaRandom {
 private:
     std::random_device rd;
-    std::mt19937 gen;
+    std::mt19937_64 gen;
     std::uniform_real_distribution<> dis;
     std::uniform_int_distribution<> dis_5star;
 
 public:
     GachaRandom(int total_5star) 
         : gen(rd())
-        , dis(0.0, 1.0)
+        , dis(0.0, 100.0)
         , dis_5star(1, total_5star) 
     {}
 
@@ -71,7 +71,7 @@ int simulate_one_round(int total_5star, int want_5star, int total_4star, int wan
             // 先判断5星
             if (want_5star > 0) {  // 只有当我们想要5星卡时才判定
                 for (int i = 1; i <= want_5star; i++) {
-                    if (rand < 0.005 * i) {
+                    if (rand < 0.5 * i) {
                         cards_5star.insert(i);
                         goto next_draw;
                     }
@@ -83,7 +83,7 @@ int simulate_one_round(int total_5star, int want_5star, int total_4star, int wan
             else {
                 rand = random.get_random();
                 for (int i = 1; i <= want_4star; i++) {
-                    if(rand < 0.0075 * i) {
+                    if(rand < 0.75 * i) {
                         cards_4star.insert(i);
                         break;
                     }
@@ -95,7 +95,7 @@ int simulate_one_round(int total_5star, int want_5star, int total_4star, int wan
             if (total_4star > 0 && want_4star > 0) {
                 rand = random.get_random();
                 for (int i = 1; i <= want_4star; i++) {
-                    if(rand < 0.0075 * i) {
+                    if(rand < 0.75 * i) {
                         cards_4star.insert(i);
                         break;
                     }
@@ -229,7 +229,7 @@ inline ArgProcessing arg_processing(int argc, const char* argv[]) {
                 Result.threads = (unsigned int)user_threads;
                 }
             } else if (arg == "--version" || arg == "-v") {
-                std::cout << "BanG Dream! Gacha,version 1.9.1,Build 54 \n"
+                std::cout << "\nBanG Dream! Gacha,version 1.9.2,Build 57 \n"
                     << "Copyright (c) 2025, 山泥若叶睦，Modified by UDMH \n"
                     << "Original page at: https://gitee.com/handsome-druid/bangdream-gacha \n"
                     << "My GitHub page at: https://github.com/YukkimuraHinata/bangdream-gacha \n"
