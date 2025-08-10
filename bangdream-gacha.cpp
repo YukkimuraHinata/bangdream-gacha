@@ -3,11 +3,13 @@
 #include <set>
 #include <random>
 #include <algorithm>
+#include <execution>
 #include <chrono>
 #include <thread>
 #include <mutex>
 #include <numeric>
 #include "color.h"
+//#include <fstream>
 
 #define Simulations 1000000 //默认模拟次数
 #define minSimulations 10000 //最低模拟次数
@@ -27,7 +29,7 @@ public:
         , dis_5star(1, total_5star) 
     {}
 
-    // 获取0-1之间的随机数
+    // 获取0-100之间的随机数
     double get_random() {
         return dis(gen);
     }
@@ -55,7 +57,7 @@ int simulate_one_round(int total_5star, int want_5star, int total_4star, int wan
 
     while (true) {
         draws++;
-        // 修改50保底逻辑
+        // 50保底逻辑
         if (draws % 50 == 0 && normal == 1) {
             if (want_5star > 0) {  // 只有当我们想要5星卡时才考虑
                 int roll = random.get_5star_random();  // 随机抽取一张5星卡
@@ -110,7 +112,6 @@ int simulate_one_round(int total_5star, int want_5star, int total_4star, int wan
             break; 
         }
     }
-    
     return draws;
 }
 
@@ -166,7 +167,7 @@ int calculate_statistics(int total_5star, int want_5star, int total_4star, int w
     total_draws = std::accumulate(draw_counts.begin(), draw_counts.end(), 0LL);
     
     double expected_draws = static_cast<double>(total_draws) / simulations;
-    std::sort(draw_counts.begin(), draw_counts.end());
+    std::sort(std::execution::par,draw_counts.begin(), draw_counts.end());
     double percentile_50 = draw_counts[simulations / 2];
     double percentile_90 = draw_counts[static_cast<int>(simulations * 0.9)];
     double max_number = draw_counts.back();
@@ -201,6 +202,11 @@ int calculate_statistics(int total_5star, int want_5star, int total_4star, int w
             std::cout << "输入值 " << input << " 对应累积概率约为 " << ANSI_Cyan << cdfValue * 100.0 << "% " << ANSI_COLOR_RESET << std::endl;
         }
     }
+    /* 输出vector
+    std::ofstream outFile("vector_draw_counts_output.txt");
+    for (const auto& element : draw_counts) {
+        outFile << element << " ";
+    } */
     return 0;
 }
 
@@ -229,7 +235,7 @@ inline ArgProcessing arg_processing(int argc, const char* argv[]) {
                 Result.threads = (unsigned int)user_threads;
                 }
             } else if (arg == "--version" || arg == "-v") {
-                std::cout << "\nBanG Dream! Gacha,version 1.9.2,Build 57 \n"
+                std::cout << "\nBanG Dream! Gacha,version 1.9.3,Build 60 \n"
                     << "Copyright (c) 2025, 山泥若叶睦，Modified by UDMH \n"
                     << "Original page at: https://gitee.com/handsome-druid/bangdream-gacha \n"
                     << "My GitHub page at: https://github.com/YukkimuraHinata/bangdream-gacha \n"
